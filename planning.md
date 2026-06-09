@@ -9,7 +9,11 @@
 
 ## Domain
 
-<!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
+
+
+---
+
+## Documents
 
 Fan-generated anime knowledge — recommendations, watch orders, genre guides,
 and show reviews sourced from Reddit (r/anime, r/Animesuggest) and
@@ -19,35 +23,23 @@ or Netflix don't provide. A new fan can't easily search "good psychological
 anime for someone who liked Death Note" and get a trustworthy, personalized
 answer from any single official source — that knowledge lives in scattered
 forum threads and community discussions.
----
-
-## Documents
-
-<!-- List your specific sources: URLs, subreddit names, forum threads, or file descriptions.
-     Aim for at least 10 sources that together cover different subtopics or perspectives within your domain. -->
-
 
 | # | Source | Description | URL or location |
 |---|--------|-------------|-----------------|
-| 1 | Reddit | General anime recommendation megathread | https://www.reddit.com/r/AnimeReviews/comments/1pi8zxv/my_anime_list_looking_for_recommendations/
-| 2 | Reddit | Hidden and underwatched gems thread | https://www.reddit.com/r/anime/comments/1edei41/a_simple_list_of_anime_for_people_looking_for/?screen_view_count=1
-| 3 | Reddit | Beginner's guide and where to start | https://www.reddit.com/r/coolguides/comments/bw6vqy/the_ultimate_anime_recommendation_flowchart_for/?screen_view_count=1
-| 4 | Reddit | Best and worst anime by genre discussion | https://www.reddit.com/r/anime/comments/17k9qor/best_and_worst_genres_of_anime/?limit=500
-| 5 | MyAnimeList | Top user reviews for Death Note | https://myanimelist.net/manga/21/Death_Note/reviews
-| 6 | MyAnimeList | Top user reviews for FMA Brotherhood | https://myanimelist.net/anime/5114/Fullmetal_Alchemist__Brotherhood/reviews
-| 7 | MyAnimeList | Top user reviews for Attack on Titan | https://myanimelist.net/anime/16498/Shingeki_no_Kyojin/reviews
-| 8 | Reddit | Anime watch order guides | https://www.reddit.com/r/anime/wiki/watch_order
-| 9 | Web article | 40 best isekai anime worth watching | https://www.fandomspot.com/best-isekai-anime/
-| 10 | Reddit  | Best slice of life anime | https://www.reddit.com/r/anime/comments/1ki0g4a/best_slice_of_life_anime/
-| 11 | Web article | Top 30 starter anime for beginners | https://www.fandomspot.com/beginner-anime/
+| 1 | Reddit | A general list of anime recommendations | https://www.reddit.com/r/AnimeReviews/comments/1pi8zxv/my_anime_list_looking_for_recommendations/
+| 2 | Reddit | Anime that are hidden gems but very good | https://www.reddit.com/r/anime/comments/1edei41/a_simple_list_of_anime_for_people_looking_for/
+| 3 | Reddit | Best and worst anime genere | https://www.reddit.com/r/anime/comments/17k9qor/best_and_worst_genres_of_anime/?limit=500
+| 4 | My Anime List | Top Reviews for Death Note | https://myanimelist.net/manga/21/Death_Note/reviews
+| 5 | My Anime List | Top Reviews for Attack on Titan | https://myanimelist.net/anime/16498/Shingeki_no_Kyojin/reviews
+| 6 | My Anime List | Top Reviews for Full Metal Alchemist: Brootherhood | https://myanimelist.net/manga/21/Death_Note/reviews
+| 7 | FandomSpot | Best Isekai Anime | https://www.fandomspot.com/best-isekai-anime/
+| 8 | FandomSpot | Ultimate Beginners Guide for Anime | https://www.fandomspot.com/beginner-anime/
+| 9 | Reddit | Best Slice of Life Anime | https://www.reddit.com/r/anime/comments/1ki0g4a/best_slice_of_life_anime/
+| 10 | Reddit | The Ultimate Anime Watch Order Guide | https://www.reddit.com/r/anime/wiki/watch_order
+
 ---
 
 ## Chunking Strategy
-
-<!-- How will you split documents into chunks?
-     State your chunk size (in tokens or characters), overlap size, and explain why those
-     numbers fit the structure of your documents.
-     A review-heavy corpus warrants different chunking than a long FAQ. -->
 
 **Chunk size:** 500 characters
 
@@ -56,23 +48,23 @@ forum threads and community discussions.
 **Reasoning:** Documents are a mix of short reviews (1–3 sentences) and
 longer Reddit posts (multiple paragraphs), with key facts sometimes
 self-contained and sometimes spread across sentences. 500 characters is
-large enough to capture a complete opinion or recommendation with full
-context, while short reviews will naturally become their own single chunk.
-The 50 character overlap prevents key facts from being cut across a chunk
-boundary and lost entirely. LangChain's RecursiveCharacterTextSplitter is
-used because it tries to split on paragraph breaks first, then sentences,
-then characters — respecting natural content boundaries instead of cutting
+large enough to capture a complete opinion or recommendation with context,
+while short reviews will naturally become their own single chunk. The 50
+character overlap prevents key facts from being cut across a chunk boundary
+and lost entirely. LangChain's RecursiveCharacterTextSplitter will be used
+because it tries to split on paragraph breaks first, then sentences, then
+characters — respecting natural content boundaries instead of cutting
 mid-thought.
+
+**Chunk size:**
+
+**Overlap:**
+
+**Reasoning:**
 
 ---
 
 ## Retrieval Approach
-
-<!-- Which embedding model are you using (e.g., all-MiniLM-L6-v2 via sentence-transformers)?
-     How many chunks will you retrieve per query (top-k)?
-     If you were deploying this for real users and cost wasn't a constraint, what tradeoffs
-     would you weigh in choosing a different embedding model — context length, multilingual
-     support, accuracy on domain-specific text, latency? -->
 
 **Embedding model:** all-MiniLM-L6-v2 via sentence-transformers
 
@@ -90,22 +82,24 @@ general-purpose model on niche terminology and abbreviations like "FMA"
 or "AoT". Latency is also a consideration at scale — local models avoid
 network round-trips but are constrained by local hardware.
 
+**Embedding model:**
+
+**Top-k:**
+
+**Production tradeoff reflection:**
+
 ---
 
 ## Evaluation Plan
 
-<!-- List your 5 test questions with their expected correct answers.
-     Questions should be specific enough that you can judge whether the system's response
-     is right or wrong. "What are good dining halls?" is too vague.
-     "What do students say about wait times at [dining hall name] during lunch?" is testable. -->
 
 | # | Question | Expected answer |
 |---|----------|-----------------|
-| 1 | What anime should I watch if I liked Death Note? | Should recommend psychological thrillers like Monster, Code Geass, or The Promised Neverland based on community reviews |
-| 2 | What do fans think of Attack on Titan's ending? | Should recommend psychological thrillers like Monster, Code Geass, or The Promised Neverland based on community reviews |
-| 3 | What is a good starter anime for someone completely new to anime? | Should return beginner-friendly picks like FMA Brotherhood, AoT, or Your Lie in April from the beginner guide |
-| 4 | What are the best isekai anime according to fans? | Should surface community-recommended isekai titles from the genre thread and isekai article |
-| 5 | What is the best slice of life anime for someone who wants something relaxing? | Should recommend titles like Laid-Back Camp, Barakamon, or Non Non Biyori from the slice of life document |
+| 1 | What anime should I watch if I liked Death Note? | Should recommend psychological thrillers like Monster, Code Geass, or The Promised Neverland based on community reviews
+| 2 | What do fans think of Attack on Titan's ending? | Should reflect the mixed/divided community opinion captured in collected AoT reviews 
+| 3 | What is a good starter anime for someone completely new to anime? | Should return beginner-friendly picks like FMA Brotherhood, AoT, or Your Lie in April from the beginner guide 
+| 4 | What are the best isekai anime according to fans? | Should surface community-recommended isekai titles from the genre thread
+| 5 | Is Sword Art Online worth watching? | Should reflect the community consensus (enjoyable but divisive/overrated) from overrated/underrated threads 
 
 ---
 
@@ -139,7 +133,7 @@ network round-trips but are constrained by local hardware.
 ┌─────────────────────────────────────────────────────────────┐
 │                        INDEXING                             │
 │                                                             │
-│  [.txt files in documents/]                                 │
+│  [.txt files]                                               │
 │       ↓                                                     │
 │  Document Ingestion                                         │
 │  (Python open())                                            │
@@ -154,7 +148,7 @@ network round-trips but are constrained by local hardware.
 ┌─────────────────────────────────────────────────────────────┐
 │                        QUERYING                             │
 │                                                             │
-│  [User question via Gradio]                                 │
+│  [User question]                                            │
 │       ↓                                                     │
 │  Embed query                                                │
 │  (all-MiniLM-L6-v2)                                         │
@@ -165,10 +159,9 @@ network round-trips but are constrained by local hardware.
 │  Generation                                                 │
 │  (Groq llama-3.3-70b-versatile)                             │
 │       ↓                                                     │
-│  Answer + source citations                                  │
+│  [Answer + source citations]                                │
 │  (Gradio UI)                                                │
 └─────────────────────────────────────────────────────────────┘
-
 ---
 
 ## AI Tool Plan
@@ -184,8 +177,8 @@ network round-trips but are constrained by local hardware.
      with my specified chunk size and overlap" is a plan. -->
 
 **Milestone 3 — Ingestion and chunking:**
-I will give Claude my Documents section (file locations and types) and my
-Chunking Strategy section (chunk_size=500, overlap=50,
+I will give Claude my Documents section (file locations and types) and
+my Chunking Strategy section (chunk_size=500, overlap=50,
 RecursiveCharacterTextSplitter). I will ask it to implement two functions:
 load_documents() that reads all .txt files from the documents/ folder and
 returns a list of {text, source} dicts, and chunk_documents() that applies

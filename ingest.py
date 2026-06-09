@@ -3,17 +3,17 @@ import re
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Reddit UI boilerplate that gets scraped along with comment text. These carry
-# no semantic meaning and only add noise to embeddings, so we strip them. The
-# concatenated forms (e.g. "permalinkembedsaveparentreportreply") are how the
-# comment-action row shows up once whitespace is stripped during scraping.
+# Reddit's comment-action row gets scraped as one whitespace-stripped token,
+# always starting with "permalink" and followed by some subset of these actions
+# in varying combinations (e.g. "permalinkembedsaveparentreportreply" or
+# "permalinksavereportreply"). We match the whole run rather than enumerate every
+# permutation. "permalink" never appears in real prose, so this is safe.
+REDDIT_ACTION_ROW = re.compile(
+    r"permalink(?:embed|save|parent|report|reply|share|context|give ?award|hide|delete)*"
+)
+
+# Other Reddit UI fragments to strip outright.
 REDDIT_BOILERPLATE = [
-    "permalinkembedsaveparentreportreplygive award",
-    "permalinkembedsavereportreplygive award",
-    "permalinkembedsaveparentreportreply",
-    "permalinkembedsavereportreply",
-    "permalinkembedsaveparent",
-    "permalinkembedsave",
     "load more comments",
     "continue this thread",
     "give award",
@@ -27,6 +27,42 @@ REDDIT_UI_LINES = {"report", "reply", "share", "permalink", "embed", "save", "pa
 # A chunk shorter than this (after cleaning) is almost always a stray review
 # header, timestamp, or fragment with too little context to be useful.
 MIN_CHUNK_LENGTH = 100
+
+# Curse/swear/profanity words. Any chunk containing one of these (as a whole
+# word) is dropped entirely so it is never embedded or retrieved. Edit this set
+# to tune strictness. Note: "hell" is intentionally excluded because it appears
+# constantly in legitimate anime content (titles, idioms like "what the hell").
+PROFANITY = frozenset({
+    # f-word family
+    "fuck", "fucks", "fucked", "fucking", "fuckin", "fucker", "fuckers",
+    "fuckface", "clusterfuck", "motherfucker", "motherfuckers", "motherfucking",
+    # s-word family
+    "shit", "shits", "shitty", "shitting", "shithead", "bullshit",
+    # b-word family
+    "bitch", "bitches", "bitching", "bastard", "bastards",
+    # a-word family
+    "ass", "asses", "asshole", "assholes", "dumbass", "jackass", "asshat",
+    # d-word family
+    "dick", "dicks", "dickhead", "douche", "douchebag", "damn", "damned", "dammit",
+    # crude anatomy / sexual
+    "cock", "cocks", "cunt", "cunts", "pussy", "prick", "twat",
+    "slut", "sluts", "whore", "whores", "piss", "pissed", "pissing",
+    # slurs
+    "fag", "faggot", "faggots", "retard", "retarded",
+    "nigger", "niggers", "nigga", "niggas",
+    # misc / british
+    "crap", "wanker", "bollocks", "bugger", "goddamn", "goddamned",
+})
+
+PROFANITY_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(w) for w in PROFANITY) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def contains_profanity(text):
+    """Return True if the text contains any curse/swear/profanity word."""
+    return PROFANITY_PATTERN.search(text) is not None
 
 
 def clean_text(text):
@@ -43,7 +79,8 @@ def clean_text(text):
     # Drop the U+FFFD replacement char if any genuinely corrupted bytes exist.
     text = text.replace("�", "")
 
-    # Remove Reddit comment-action boilerplate.
+    # Remove Reddit comment-action rows and other UI boilerplate.
+    text = REDDIT_ACTION_ROW.sub("", text)
     for token in REDDIT_BOILERPLATE:
         text = text.replace(token, "")
 
@@ -109,6 +146,9 @@ def chunk_documents(documents, chunk_size=500, chunk_overlap=50):
         for text in split_texts:
             text = text.strip()
             if is_weak_chunk(text):
+                continue
+            # Drop any chunk containing curse/swear/profanity words entirely.
+            if contains_profanity(text):
                 continue
             chunks.append({
                 "text": text,
