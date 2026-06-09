@@ -68,7 +68,13 @@ mid-thought.
 
 **Embedding model:** all-MiniLM-L6-v2 via sentence-transformers
 
-**Top-k:** 4 chunks per query
+**Top-k:** 3 chunks per query
+
+**Top-k reasoning:** Settled on 3 rather than 4 during implementation. With
+`temperature=0` and a strict grounding prompt, a 4th chunk frequently added a
+low-relevance, high-distance result that diluted the context and nudged the
+model toward weaker or hedged answers. Retrieving 3 kept the context tighter
+and better-grounded across the evaluation questions.
 
 **Production tradeoff reflection:** all-MiniLM-L6-v2 runs fully locally
 with no API cost or rate limits, which makes it ideal for this project.
@@ -154,7 +160,7 @@ network round-trips but are constrained by local hardware.
 │  (all-MiniLM-L6-v2)                                         │
 │       ↓                                                     │
 │  Retrieval                                                  │
-│  (ChromaDB semantic search, top-k=4)                        │
+│  (ChromaDB semantic search, top-k=3)                        │
 │       ↓                                                     │
 │  Generation                                                 │
 │  (Groq llama-3.3-70b-versatile)                             │
