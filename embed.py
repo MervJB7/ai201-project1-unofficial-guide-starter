@@ -2,25 +2,59 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from ingest import load_documents, chunk_documents
 
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+CHROMA_PATH = "chroma_db"
+
+# Lazily-built, process-wide singletons. Loading the embedding model and opening
+# the ChromaDB client are both expensive, so we do each once and reuse it across
+# every retrieve() call instead of rebuilding them on every query.
+_model = None
+_client = None
+_collections = {}
+
+
+def get_model():
+    """Return the shared embedding model, loading it once on first use."""
+    global _model
+    if _model is None:
+        print("Loading embedding model...")
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
+
+
+def get_client():
+    """Return the shared ChromaDB client, opening it once on first use."""
+    global _client
+    if _client is None:
+        _client = chromadb.PersistentClient(path=CHROMA_PATH)
+    return _client
+
+
+def get_collection(collection_name="anime_guide"):
+    """Return a cached handle to the named ChromaDB collection."""
+    if collection_name not in _collections:
+        _collections[collection_name] = get_client().get_collection(collection_name)
+    return _collections[collection_name]
+
+
 def embed_and_store(chunks, collection_name="anime_guide"):
     """Embed chunks and store them in ChromaDB."""
-    
-    # Set up ChromaDB (stores locally in a folder called chroma_db/)
-    client = chromadb.PersistentClient(path="chroma_db")
-    
+
+    client = get_client()
+
     # Delete existing collection if it exists (so we can re-run cleanly)
     try:
         client.delete_collection(collection_name)
         print("Deleted existing collection.")
-    except:
+    except Exception:
         pass
-    
+
     collection = client.create_collection(collection_name)
-    
-    # Load embedding model
-    print("Loading embedding model...")
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    
+    # Keep the retrieval cache in sync with the freshly rebuilt collection.
+    _collections[collection_name] = collection
+
+    model = get_model()
+
     # Embed all chunks
     print(f"Embedding {len(chunks)} chunks...")
     texts = [chunk["text"] for chunk in chunks]
@@ -46,12 +80,11 @@ def embed_and_store(chunks, collection_name="anime_guide"):
 
 def retrieve(query, collection_name="anime_guide", k=3):
     """Retrieve the top-k most relevant chunks for a query."""
-    
-    # Load model and collection
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    client = chromadb.PersistentClient(path="chroma_db")
-    collection = client.get_collection(collection_name)
-    
+
+    # Reuse the cached model and collection rather than rebuilding per call.
+    model = get_model()
+    collection = get_collection(collection_name)
+
     # Embed the query
     query_embedding = model.encode(query).tolist()
     
