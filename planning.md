@@ -11,6 +11,14 @@
 
 <!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
 
+Fan-generated anime knowledge — recommendations, watch orders, genre guides,
+and show reviews sourced from Reddit (r/anime, r/Animesuggest) and
+MyAnimeList. This knowledge is valuable because it reflects real community
+opinions and nuanced taste-matching that official platforms like Crunchyroll
+or Netflix don't provide. A new fan can't easily search "good psychological
+anime for someone who liked Death Note" and get a trustworthy, personalized
+answer from any single official source — that knowledge lives in scattered
+forum threads and community discussions.
 ---
 
 ## Documents
@@ -18,19 +26,20 @@
 <!-- List your specific sources: URLs, subreddit names, forum threads, or file descriptions.
      Aim for at least 10 sources that together cover different subtopics or perspectives within your domain. -->
 
+
 | # | Source | Description | URL or location |
 |---|--------|-------------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
-
+| 1 | Reddit | General anime recommendation megathread | https://www.reddit.com/r/AnimeReviews/comments/1pi8zxv/my_anime_list_looking_for_recommendations/
+| 2 | Reddit | Hidden and underwatched gems thread | https://www.reddit.com/r/anime/comments/1edei41/a_simple_list_of_anime_for_people_looking_for/?screen_view_count=1
+| 3 | Reddit | Beginner's guide and where to start | https://www.reddit.com/r/coolguides/comments/bw6vqy/the_ultimate_anime_recommendation_flowchart_for/?screen_view_count=1
+| 4 | Reddit | Best and worst anime by genre discussion | https://www.reddit.com/r/anime/comments/17k9qor/best_and_worst_genres_of_anime/?limit=500
+| 5 | MyAnimeList | Top user reviews for Death Note | https://myanimelist.net/manga/21/Death_Note/reviews
+| 6 | MyAnimeList | Top user reviews for FMA Brotherhood | https://myanimelist.net/anime/5114/Fullmetal_Alchemist__Brotherhood/reviews
+| 7 | MyAnimeList | Top user reviews for Attack on Titan | https://myanimelist.net/anime/16498/Shingeki_no_Kyojin/reviews
+| 8 | Reddit | Anime watch order guides | https://www.reddit.com/r/anime/wiki/watch_order
+| 9 | Web article | 40 best isekai anime worth watching | https://www.fandomspot.com/best-isekai-anime/
+| 10 | Reddit  | Best slice of life anime | https://www.reddit.com/r/anime/comments/1ki0g4a/best_slice_of_life_anime/
+| 11 | Web article | Top 30 starter anime for beginners | https://www.fandomspot.com/beginner-anime/
 ---
 
 ## Chunking Strategy
@@ -40,11 +49,20 @@
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:**
+**Chunk size:** 500 characters
 
-**Overlap:**
+**Overlap:** 50 characters
 
-**Reasoning:**
+**Reasoning:** Documents are a mix of short reviews (1–3 sentences) and
+longer Reddit posts (multiple paragraphs), with key facts sometimes
+self-contained and sometimes spread across sentences. 500 characters is
+large enough to capture a complete opinion or recommendation with full
+context, while short reviews will naturally become their own single chunk.
+The 50 character overlap prevents key facts from being cut across a chunk
+boundary and lost entirely. LangChain's RecursiveCharacterTextSplitter is
+used because it tries to split on paragraph breaks first, then sentences,
+then characters — respecting natural content boundaries instead of cutting
+mid-thought.
 
 ---
 
@@ -56,11 +74,21 @@
      would you weigh in choosing a different embedding model — context length, multilingual
      support, accuracy on domain-specific text, latency? -->
 
-**Embedding model:**
+**Embedding model:** all-MiniLM-L6-v2 via sentence-transformers
 
-**Top-k:**
+**Top-k:** 4 chunks per query
 
-**Production tradeoff reflection:**
+**Production tradeoff reflection:** all-MiniLM-L6-v2 runs fully locally
+with no API cost or rate limits, which makes it ideal for this project.
+For a real production deployment I would weigh several tradeoffs: OpenAI's
+text-embedding-3-small offers higher accuracy for English text but adds
+per-request cost and a dependency on an external API. A multilingual model
+like paraphrase-multilingual-MiniLM-L12-v2 would better handle Japanese
+anime titles and non-English queries. For a domain-specific system, a model
+fine-tuned on anime or media review text would likely outperform a
+general-purpose model on niche terminology and abbreviations like "FMA"
+or "AoT". Latency is also a consideration at scale — local models avoid
+network round-trips but are constrained by local hardware.
 
 ---
 
@@ -73,11 +101,11 @@
 
 | # | Question | Expected answer |
 |---|----------|-----------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | What anime should I watch if I liked Death Note? | Should recommend psychological thrillers like Monster, Code Geass, or The Promised Neverland based on community reviews |
+| 2 | What do fans think of Attack on Titan's ending? | Should recommend psychological thrillers like Monster, Code Geass, or The Promised Neverland based on community reviews |
+| 3 | What is a good starter anime for someone completely new to anime? | Should return beginner-friendly picks like FMA Brotherhood, AoT, or Your Lie in April from the beginner guide |
+| 4 | What are the best isekai anime according to fans? | Should surface community-recommended isekai titles from the genre thread and isekai article |
+| 5 | What is the best slice of life anime for someone who wants something relaxing? | Should recommend titles like Laid-Back Camp, Barakamon, or Non Non Biyori from the slice of life document |
 
 ---
 
@@ -87,9 +115,16 @@
      Consider: noisy or inconsistent documents, missing source attribution, off-topic
      retrieval, chunks that split key information across boundaries. -->
 
-1.
+1. **Mixed document length producing weak chunks:** Short 1–2 sentence
+   reviews may produce chunks too small to carry enough semantic meaning
+   for the embedding model to match accurately. Retrieval may return
+   fragments that don't fully answer the query.
 
-2.
+2. **Anime title abbreviations and alternate names:** The embedding model
+   may not handle abbreviations like "FMA", "AoT", or "HxH" well,
+   causing retrieval to miss relevant chunks when a user queries by full
+   title or vice versa. Japanese titles vs. English titles could cause
+   the same problem.
 
 ---
 
@@ -100,6 +135,39 @@
      Label each stage with the tool or library you're using.
      You can use ASCII art, a Mermaid diagram, or embed a sketch as an image.
      You'll use this diagram as context when prompting AI tools to implement each stage. -->
+
+┌─────────────────────────────────────────────────────────────┐
+│                        INDEXING                             │
+│                                                             │
+│  [.txt files in documents/]                                 │
+│       ↓                                                     │
+│  Document Ingestion                                         │
+│  (Python open())                                            │
+│       ↓                                                     │
+│  Chunking                                                   │
+│  (LangChain RecursiveCharacterTextSplitter                  │
+│   chunk_size=500, overlap=50)                               │
+│       ↓                                                     │
+│  Embedding + Vector Store                                   │
+│  (sentence-transformers all-MiniLM-L6-v2 → ChromaDB)       │
+└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        QUERYING                             │
+│                                                             │
+│  [User question via Gradio]                                 │
+│       ↓                                                     │
+│  Embed query                                                │
+│  (all-MiniLM-L6-v2)                                         │
+│       ↓                                                     │
+│  Retrieval                                                  │
+│  (ChromaDB semantic search, top-k=4)                        │
+│       ↓                                                     │
+│  Generation                                                 │
+│  (Groq llama-3.3-70b-versatile)                             │
+│       ↓                                                     │
+│  Answer + source citations                                  │
+│  (Gradio UI)                                                │
+└─────────────────────────────────────────────────────────────┘
 
 ---
 
@@ -116,7 +184,30 @@
      with my specified chunk size and overlap" is a plan. -->
 
 **Milestone 3 — Ingestion and chunking:**
+I will give Claude my Documents section (file locations and types) and my
+Chunking Strategy section (chunk_size=500, overlap=50,
+RecursiveCharacterTextSplitter). I will ask it to implement two functions:
+load_documents() that reads all .txt files from the documents/ folder and
+returns a list of {text, source} dicts, and chunk_documents() that applies
+my specified chunking strategy and returns a list of chunks with source
+metadata attached. I will verify the output by printing 5 random chunks
+and confirming they are readable, complete thoughts with no HTML artifacts.
 
 **Milestone 4 — Embedding and retrieval:**
+I will give Claude my Retrieval Approach section and my architecture
+diagram. I will ask it to implement embed_and_store() that embeds all
+chunks using all-MiniLM-L6-v2 and stores them in ChromaDB with source
+metadata, and retrieve() that takes a query string and returns the top 4
+most relevant chunks with their source filenames. I will verify by running
+3 of my evaluation questions and checking that returned chunks visibly
+relate to each question.
 
 **Milestone 5 — Generation and interface:**
+I will give Claude my grounding requirement (answers must come only from
+retrieved chunks, not LLM general knowledge), my output format (answer +
+source list), and the Gradio skeleton from the project instructions. I
+will ask it to implement ask() that builds a Groq prompt from retrieved
+chunks and returns a grounded answer, and a Gradio interface with a
+question input, answer output, and sources output. I will verify grounding
+by asking a question my documents don't cover and confirming the system
+says it doesn't have enough information.
